@@ -27,17 +27,30 @@ const task: Task = {
 }
 let result: ReturnType<typeof useTaskBoard> | undefined
 let root: ReturnType<typeof createRoot>
+let container: HTMLDivElement
 let client: QueryClient
 const Probe = ({ rows }: { rows: TaskListRow[] }) => {
   const value = useTaskBoard(rows)
   useLayoutEffect(() => {
     result = value
   })
-  return null
+  return createElement('textarea', value.forms.comment)
 }
 const current = () => {
   if (!result) throw new Error('Task board is not mounted')
   return result
+}
+const commentInput = () => {
+  const input = container.querySelector('textarea')
+  if (!input) throw new Error('Comment field is not mounted')
+  return input
+}
+const changeComment = (value: string) => {
+  const input = commentInput()
+  const descriptor = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')
+  if (!descriptor?.set) throw new Error('Textarea value setter is unavailable')
+  descriptor.set.call(input, value)
+  input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 const mount = (user = manager, item = task) =>
   act(() =>
@@ -58,7 +71,8 @@ beforeEach(() => {
   vi.spyOn(api, 'changeStatus').mockResolvedValue(undefined)
   result = undefined
   client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
-  root = createRoot(document.createElement('div'))
+  container = document.createElement('div')
+  root = createRoot(container)
 })
 afterEach(() => {
   act(() => root.unmount())
@@ -100,9 +114,9 @@ describe('Перенос задач между статусами', () => {
     mount()
     await act(async () => current().functions.onMove(task, 'revision'))
     expect(current().states.revisionTask).toEqual(task)
-    act(() => current().functions.onCommentChange('   '))
-    await act(async () => current().functions.onConfirmRevision())
-    expect(current().states.commentError).toBeTruthy()
+    act(() => changeComment('   '))
+    await act(async () => current().forms.onConfirmRevision())
+    expect(current().forms.commentError).toBeTruthy()
     expect(api.changeStatus).not.toHaveBeenCalled()
     act(() => current().functions.onCancelRevision())
     expect(current().states.revisionTask).toBeNull()
@@ -111,13 +125,13 @@ describe('Перенос задач между статусами', () => {
     vi.mocked(api.changeStatus).mockRejectedValueOnce({ code: '40001' })
     mount()
     await act(async () => current().functions.onMove(task, 'revision'))
-    act(() => current().functions.onCommentChange('Исправить крепления'))
-    await act(async () => current().functions.onConfirmRevision())
+    act(() => changeComment('Исправить крепления'))
+    await act(async () => current().forms.onConfirmRevision())
     expect(current().states.error).toContain('уже изменилась')
     expect(current().states.revisionTask).toEqual(task)
-    expect(current().states.comment).toBe('Исправить крепления')
+    expect(commentInput().value).toBe('Исправить крепления')
     expect(current().states.announcement).toBe('')
-    await act(async () => current().functions.onConfirmRevision())
+    await act(async () => current().forms.onConfirmRevision())
     expect(api.changeStatus).toHaveBeenCalledTimes(1)
     const refreshed = { ...task, title: 'Актуальная задача', version: 2 }
     vi.spyOn(api, 'loadWorkspace').mockResolvedValue({
@@ -126,8 +140,8 @@ describe('Перенос задач между статусами', () => {
       profiles: []
     })
     await act(async () => current().functions.onRefreshRevision())
-    expect(current().states.comment).toBe('Исправить крепления')
-    await act(async () => current().functions.onConfirmRevision())
+    expect(commentInput().value).toBe('Исправить крепления')
+    await act(async () => current().forms.onConfirmRevision())
     expect(api.changeStatus).toHaveBeenLastCalledWith(refreshed, 'revision', 'Исправить крепления')
     expect(current().states.revisionTask).toBeNull()
     expect(current().states.announcement).toContain('на доработку')
@@ -141,12 +155,12 @@ describe('Перенос задач между статусами', () => {
     })
     mount()
     await act(async () => current().functions.onMove(task, 'revision'))
-    act(() => current().functions.onCommentChange('Исправить крепления'))
-    await act(async () => current().functions.onConfirmRevision())
+    act(() => changeComment('Исправить крепления'))
+    await act(async () => current().forms.onConfirmRevision())
     await act(async () => current().functions.onRefreshRevision())
     expect(current().states.revisionUnavailable).toBe(true)
-    expect(current().states.comment).toBe('Исправить крепления')
-    await act(async () => current().functions.onConfirmRevision())
+    expect(commentInput().value).toBe('Исправить крепления')
+    await act(async () => current().forms.onConfirmRevision())
     expect(api.changeStatus).toHaveBeenCalledTimes(1)
   })
   it('не выполняет два изменения при повторном действии до следующего рендера', async () => {

@@ -6,6 +6,7 @@ import {
   Button,
   Field,
   FieldGroup,
+  FieldError,
   FieldLabel,
   Input,
   InputGroup,
@@ -22,7 +23,7 @@ import styles from './SignIn.module.css'
 import { useSignIn } from './useSignIn'
 
 const SignIn = () => {
-  const { states, functions } = useSignIn()
+  const { states, functions, forms } = useSignIn()
   return (
     <main className={styles.layout}>
       <title>Вход · мини-CRM</title>
@@ -46,20 +47,15 @@ const SignIn = () => {
           <ThemeToggle />
         </div>
         <p>Используйте учётную запись, которую выдал руководитель.</p>
-        <form
-          method="post"
-          onSubmit={event => {
-            event.preventDefault()
-            void functions.onSubmit(event.currentTarget)
-          }}
-          aria-busy={states.busy}
-        >
+        <form method="post" onSubmit={forms.onSubmit} aria-busy={states.busy}>
           <FieldGroup>
-            <Field data-disabled={states.busy}>
+            <Field data-disabled={states.busy} data-invalid={!!forms.errors.email}>
               <FieldLabel htmlFor="sign-in-email">Email</FieldLabel>
               <Input
                 id="sign-in-email"
-                name="email"
+                {...forms.register('email')}
+                aria-invalid={!!forms.errors.email}
+                aria-describedby={forms.errors.email ? 'sign-in-email-error' : undefined}
                 type="email"
                 autoComplete="username"
                 autoCapitalize="none"
@@ -67,13 +63,18 @@ const SignIn = () => {
                 required
                 disabled={states.busy}
               />
+              {forms.errors.email && (
+                <FieldError id="sign-in-email-error">Укажите корректный email.</FieldError>
+              )}
             </Field>
-            <Field data-disabled={states.busy}>
+            <Field data-disabled={states.busy} data-invalid={!!forms.errors.password}>
               <FieldLabel htmlFor="sign-in-password">Пароль</FieldLabel>
               <InputGroup>
                 <InputGroupInput
                   id="sign-in-password"
-                  name="password"
+                  {...forms.register('password')}
+                  aria-invalid={!!forms.errors.password}
+                  aria-describedby={forms.errors.password ? 'sign-in-password-error' : undefined}
                   type={states.passwordType}
                   autoComplete="current-password"
                   spellCheck={false}
@@ -98,6 +99,9 @@ const SignIn = () => {
                   </InputGroupButton>
                 </InputGroupAddon>
               </InputGroup>
+              {forms.errors.password && (
+                <FieldError id="sign-in-password-error">Введите пароль.</FieldError>
+              )}
             </Field>
             {states.error && (
               <Alert variant="destructive">

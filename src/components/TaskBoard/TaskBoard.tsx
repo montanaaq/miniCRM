@@ -29,7 +29,7 @@ import TaskBoardColumn from './TaskBoardColumn'
 import { useTaskBoard } from './useTaskBoard'
 
 const TaskBoard = ({ rows, home }: { rows: TaskListRow[]; home: WorkspaceHome }) => {
-  const { states, functions } = useTaskBoard(rows)
+  const { states, functions, forms } = useTaskBoard(rows)
   return (
     <>
       {states.error && !states.revisionTask && (
@@ -109,13 +109,7 @@ const TaskBoard = ({ rows, home }: { rows: TaskListRow[]; home: WorkspaceHome })
               {states.revisionTask?.title}. Укажите, что нужно исправить.
             </DialogDescription>
           </DialogHeader>
-          <form
-            onSubmit={event => {
-              event.preventDefault()
-              void functions.onConfirmRevision()
-            }}
-            aria-busy={states.busy}
-          >
+          <form method="post" onSubmit={forms.onConfirmRevision} aria-busy={states.busy}>
             <FieldGroup>
               {(states.error || states.revisionRefreshError || states.revisionUnavailable) && (
                 <Alert variant="destructive">
@@ -138,20 +132,19 @@ const TaskBoard = ({ rows, home }: { rows: TaskListRow[]; home: WorkspaceHome })
                   )}
                 </Alert>
               )}
-              <Field data-disabled={states.busy} data-invalid={!!states.commentError}>
+              <Field data-disabled={states.busy} data-invalid={!!forms.commentError}>
                 <FieldLabel htmlFor="board-revision-comment">Комментарий</FieldLabel>
                 <Textarea
                   id="board-revision-comment"
-                  value={states.comment}
-                  onChange={event => functions.onCommentChange(event.target.value)}
+                  {...forms.comment}
                   required
                   maxLength={2000}
                   disabled={states.busy}
-                  aria-invalid={!!states.commentError}
-                  aria-describedby={states.commentError ? 'board-revision-error' : undefined}
+                  aria-invalid={!!forms.commentError}
+                  aria-describedby={forms.commentError ? 'board-revision-error' : undefined}
                 />
-                {states.commentError && (
-                  <FieldError id="board-revision-error">{states.commentError}</FieldError>
+                {forms.commentError && (
+                  <FieldError id="board-revision-error">{forms.commentError}</FieldError>
                 )}
               </Field>
               <Field orientation="horizontal">

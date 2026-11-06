@@ -29,7 +29,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { useTaskCard } from './useTaskCard'
 
 const TaskCard = (props: TaskCardProps) => {
-  const { states, functions } = useTaskCard(props)
+  const { states, functions, forms } = useTaskCard(props)
   return (
     <div className={styles.layout}>
       <Card>
@@ -70,45 +70,54 @@ const TaskCard = (props: TaskCardProps) => {
         {states.actions.length > 0 && (
           <>
             <Separator />
-            <CardContent className="flex flex-col gap-5">
-              <h3>Следующее действие</h3>
-              <FieldGroup>
-                <Field data-disabled={states.busy} data-invalid={Boolean(states.commentError)}>
-                  <FieldLabel htmlFor="task-comment">Комментарий</FieldLabel>
-                  <Textarea
-                    id="task-comment"
-                    value={states.comment}
-                    onChange={event => functions.onCommentChange(event.target.value)}
-                    maxLength={2000}
-                    disabled={states.busy}
-                    aria-invalid={Boolean(states.commentError)}
-                    aria-describedby={
-                      states.commentError
-                        ? 'task-comment-hint task-comment-error'
-                        : 'task-comment-hint'
-                    }
-                  />
-                  <FieldDescription id="task-comment-hint">
-                    При возврате на доработку комментарий обязателен.
-                  </FieldDescription>
-                  {states.commentError && (
-                    <FieldError id="task-comment-error">{states.commentError}</FieldError>
-                  )}
-                </Field>
-              </FieldGroup>
-              <div className="actions">
-                {states.actions.map(status => (
-                  <Button
-                    key={status}
-                    variant={status === 'revision' ? 'outline' : 'default'}
-                    disabled={states.busy}
-                    onClick={() => functions.onTransition(status)}
-                  >
-                    {states.busy && <Spinner data-icon="inline-start" aria-label="Меняем статус" />}
-                    {ACTION_LABELS[status]}
-                  </Button>
-                ))}
-              </div>
+            <CardContent>
+              <form
+                method="post"
+                onSubmit={forms.onSubmit}
+                aria-busy={states.busy}
+                className="flex flex-col gap-5"
+              >
+                <h3>Следующее действие</h3>
+                <FieldGroup>
+                  <Field data-disabled={states.busy} data-invalid={Boolean(forms.commentError)}>
+                    <FieldLabel htmlFor="task-comment">Комментарий</FieldLabel>
+                    <Textarea
+                      id="task-comment"
+                      {...forms.comment}
+                      maxLength={2000}
+                      disabled={states.busy}
+                      aria-invalid={Boolean(forms.commentError)}
+                      aria-describedby={
+                        forms.commentError
+                          ? 'task-comment-hint task-comment-error'
+                          : 'task-comment-hint'
+                      }
+                    />
+                    <FieldDescription id="task-comment-hint">
+                      При возврате на доработку комментарий обязателен.
+                    </FieldDescription>
+                    {forms.commentError && (
+                      <FieldError id="task-comment-error">{forms.commentError}</FieldError>
+                    )}
+                  </Field>
+                </FieldGroup>
+                <div className="actions">
+                  {states.actions.map(status => (
+                    <Button
+                      key={status}
+                      variant={status === 'revision' ? 'outline' : 'default'}
+                      disabled={states.busy}
+                      type="submit"
+                      onClick={() => forms.onSelectStatus(status)}
+                    >
+                      {states.busy && (
+                        <Spinner data-icon="inline-start" aria-label="Меняем статус" />
+                      )}
+                      {ACTION_LABELS[status]}
+                    </Button>
+                  ))}
+                </div>
+              </form>
             </CardContent>
           </>
         )}

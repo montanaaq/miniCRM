@@ -12,6 +12,7 @@ import { STATUS_SCHEMA } from '@/shared/types/crm.schema'
 import { KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 
 export const useTaskBoard = (rows: TaskListRow[]) => {
   const { user } = useUser()
@@ -35,8 +36,9 @@ export const useTaskBoard = (rows: TaskListRow[]) => {
   })
   const busy = crmMutation.busy || revisionRefreshMutation.isPending
   const revisionBlocked = crmMutation.statusConflict || revisionUnavailable
-  const [comment, setComment] = useState('')
-  const [commentError, setCommentError] = useState('')
+  const { register, handleSubmit, reset, formState } = useForm({
+    defaultValues: { comment: '' }
+  })
   const [announcement, setAnnouncement] = useState('')
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -49,8 +51,7 @@ export const useTaskBoard = (rows: TaskListRow[]) => {
     crmMutationFunctions.onReset()
     setAnnouncement('')
     if (status === 'revision') {
-      setComment('')
-      setCommentError('')
+      reset()
       revisionRefreshMutation.reset()
       setRevisionUnavailable(false)
       setRevisionTask(task)
@@ -63,13 +64,8 @@ export const useTaskBoard = (rows: TaskListRow[]) => {
       }
     )
   }
-  const onConfirmRevision = () => {
+  const onConfirmRevision = handleSubmit(({ comment }) => {
     if (!revisionTask || busy || revisionBlocked) return
-    if (!comment.trim()) {
-      setCommentError('Укажите, что нужно исправить.')
-      return
-    }
-    setCommentError('')
     return crmMutationFunctions.onRun(
       () => changeStatus(revisionTask, 'revision', comment),
       () => {
@@ -77,7 +73,7 @@ export const useTaskBoard = (rows: TaskListRow[]) => {
         setRevisionTask(null)
       }
     )
-  }
+  })
   const onDragStart = (id: UniqueIdentifier) => {
     const task = rows.find(row => row.task.id === id)?.task
     if (!task || crmMutation.busy || !getAvailableActions(task, user).length) return
@@ -100,18 +96,21 @@ export const useTaskBoard = (rows: TaskListRow[]) => {
       sensors,
       draggedTask,
       revisionTask,
-      comment,
-      commentError,
       announcement,
       targets: draggedTask ? getAvailableActions(draggedTask, user) : []
+    },
+    forms: {
+      comment: register('comment', {
+        validate: value => !!value.trim() || 'Укажите, что нужно исправить.'
+      }),
+      commentError: formState.errors.comment?.message,
+      onConfirmRevision
     },
     functions: {
       onMove,
       onDragStart,
       onDragEnd,
       onDragCancel: () => setDraggedTask(null),
-      onCommentChange: setComment,
-      onConfirmRevision,
       onRefreshRevision: () => {
         if (!revisionTask || busy) return
         return revisionRefreshMutation.mutateAsync(revisionTask.id).catch(() => {

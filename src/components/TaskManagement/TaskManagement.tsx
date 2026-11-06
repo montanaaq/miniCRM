@@ -14,7 +14,7 @@ interface TaskManagementProps {
   profiles: Profile[]
 }
 const TaskManagement = ({ task, objectId, objects, profiles }: TaskManagementProps) => {
-  const { states, functions } = useTaskManagement(task)
+  const { states, functions, forms } = useTaskManagement(task, objectId, profiles)
   return (
     <Dialog
       open={states.editing}
@@ -73,14 +73,10 @@ const TaskManagement = ({ task, objectId, objects, profiles }: TaskManagementPro
             />
           )}
           <TaskEditor
-            task={states.original}
-            objectId={objectId}
+            editor={forms.editor}
             objects={objects}
-            profiles={profiles}
             busy={states.busy}
-            onSave={functions.onSave}
             onCancel={functions.onRequestClose}
-            onChange={functions.onChange}
           />
         </DialogContent>
       </div>

@@ -1,11 +1,15 @@
 import { getClient } from '@/lib/supabase'
 import { SIGN_IN_SCHEMA } from '@/shared/types/crm.schema'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useBoolean, useLockCallback } from '@siberiacancode/reactuse'
 import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 
 export const useSignIn = () => {
-  const [validationError, setValidationError] = useState('')
+  const { register, handleSubmit, formState } = useForm({
+    resolver: zodResolver(SIGN_IN_SCHEMA),
+    defaultValues: { email: '', password: '' }
+  })
   const [passwordVisible, togglePassword] = useBoolean(false)
   const signInMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
@@ -22,15 +26,9 @@ export const useSignIn = () => {
         )
     }
   })
-  const onSubmit = useLockCallback(async (form: HTMLFormElement) => {
-    const input = SIGN_IN_SCHEMA.safeParse(Object.fromEntries(new FormData(form)))
-    if (!input.success) {
-      setValidationError('Укажите корректный email и пароль.')
-      return
-    }
-    setValidationError('')
+  const signIn = useLockCallback(async (input: { email: string; password: string }) => {
     try {
-      await signInMutation.mutateAsync(input.data)
+      await signInMutation.mutateAsync(input)
     } catch {
       // The form renders the mutation error.
     }
@@ -38,10 +36,11 @@ export const useSignIn = () => {
   return {
     states: {
       busy: signInMutation.isPending,
-      error: validationError || signInMutation.error?.message || '',
+      error: signInMutation.error?.message || '',
       passwordVisible,
       passwordType: passwordVisible ? 'text' : 'password'
     },
-    functions: { onSubmit, onTogglePassword: togglePassword }
+    functions: { onTogglePassword: togglePassword },
+    forms: { register, errors: formState.errors, onSubmit: handleSubmit(signIn) }
   }
 }

@@ -1,4 +1,5 @@
-import type { ConstructionObject, Profile, Task, TaskInput } from '@/shared/types/crm.schema'
+import type { useTaskEditor } from './useTaskEditor'
+import type { ConstructionObject } from '@/shared/types/crm.schema'
 
 import {
   Alert,
@@ -8,6 +9,7 @@ import {
   DialogTitle,
   Field,
   FieldGroup,
+  FieldError,
   FieldLabel,
   Input,
   NativeSelect,
@@ -16,50 +18,21 @@ import {
   Textarea
 } from '@/shared/ui'
 
-import { useTaskEditor } from './useTaskEditor'
-
 interface TaskEditorProps {
-  task?: Task
-  objectId: string
+  editor: ReturnType<typeof useTaskEditor>
   objects: ConstructionObject[]
-  profiles: Profile[]
   busy: boolean
-  onSave: (input: TaskInput) => Promise<void>
   onCancel: () => void
-  onChange: () => void
 }
-const TaskEditor = ({
-  task,
-  objectId,
-  objects,
-  profiles,
-  busy,
-  onSave,
-  onCancel,
-  onChange
-}: TaskEditorProps) => {
-  const { states, functions } = useTaskEditor(task, profiles, onSave)
+const TaskEditor = ({ editor, objects, busy, onCancel }: TaskEditorProps) => {
+  const { states, forms } = editor
   return (
     <>
       <DialogHeader>
         <DialogTitle>{states.title}</DialogTitle>
       </DialogHeader>
-      <form
-        method="post"
-        className="max-w-2xl"
-        aria-busy={busy}
-        onChange={onChange}
-        onSubmit={event => {
-          event.preventDefault()
-          functions.onSubmit(event.currentTarget)
-        }}
-      >
+      <form method="post" className="max-w-2xl" aria-busy={busy} onSubmit={forms.onSubmit}>
         <FieldGroup>
-          {!!states.error && (
-            <Alert variant="destructive">
-              <AlertDescription>{states.error}</AlertDescription>
-            </Alert>
-          )}
           {states.executors.length === 0 && (
             <Alert variant="destructive">
               <AlertDescription>
@@ -67,33 +40,44 @@ const TaskEditor = ({
               </AlertDescription>
             </Alert>
           )}
-          <Field data-disabled={busy}>
+          <Field data-disabled={busy} data-invalid={!!forms.errors.title}>
             <FieldLabel htmlFor="task-title">Название задачи</FieldLabel>
             <Input
               id="task-title"
-              name="title"
-              defaultValue={task?.title}
+              {...forms.register('title')}
+              aria-invalid={!!forms.errors.title}
+              aria-describedby={forms.errors.title ? 'task-title-error' : undefined}
               required
               maxLength={200}
               disabled={busy}
             />
+            {forms.errors.title && (
+              <FieldError id="task-title-error">Название задачи обязательно.</FieldError>
+            )}
           </Field>
-          <Field data-disabled={busy}>
+          <Field data-disabled={busy} data-invalid={!!forms.errors.description}>
             <FieldLabel htmlFor="task-description">Описание</FieldLabel>
             <Textarea
               id="task-description"
-              name="description"
-              defaultValue={task?.description}
+              {...forms.register('description')}
+              aria-invalid={!!forms.errors.description}
+              aria-describedby={forms.errors.description ? 'task-description-error' : undefined}
               maxLength={10000}
               disabled={busy}
             />
+            {forms.errors.description && (
+              <FieldError id="task-description-error">
+                Описание должно содержать не более 10 000 символов.
+              </FieldError>
+            )}
           </Field>
-          <Field data-disabled={busy}>
+          <Field data-disabled={busy} data-invalid={!!forms.errors.object_id}>
             <FieldLabel htmlFor="task-object">Объект</FieldLabel>
             <NativeSelect
               id="task-object"
-              name="object_id"
-              defaultValue={task?.object_id ?? objectId}
+              {...forms.register('object_id')}
+              aria-invalid={!!forms.errors.object_id}
+              aria-describedby={forms.errors.object_id ? 'task-object-error' : undefined}
               required
               disabled={busy}
             >
@@ -106,13 +90,17 @@ const TaskEditor = ({
                 </NativeSelectOption>
               ))}
             </NativeSelect>
+            {forms.errors.object_id && (
+              <FieldError id="task-object-error">Выберите объект.</FieldError>
+            )}
           </Field>
-          <Field data-disabled={busy}>
+          <Field data-disabled={busy} data-invalid={!!forms.errors.assignee_id}>
             <FieldLabel htmlFor="task-assignee">Исполнитель</FieldLabel>
             <NativeSelect
               id="task-assignee"
-              name="assignee_id"
-              defaultValue={task?.assignee_id ?? ''}
+              {...forms.register('assignee_id')}
+              aria-invalid={!!forms.errors.assignee_id}
+              aria-describedby={forms.errors.assignee_id ? 'task-assignee-error' : undefined}
               required
               disabled={busy}
             >
@@ -125,6 +113,9 @@ const TaskEditor = ({
                 </NativeSelectOption>
               ))}
             </NativeSelect>
+            {forms.errors.assignee_id && (
+              <FieldError id="task-assignee-error">Выберите исполнителя.</FieldError>
+            )}
           </Field>
           <Field orientation="horizontal">
             <Button type="submit" disabled={busy || states.executors.length === 0}>

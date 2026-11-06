@@ -1,72 +1,61 @@
-import type { ConstructionObject, ObjectInput } from '@/shared/types/crm.schema'
+import type { useObjectEditor } from './useObjectEditor'
 
 import {
-  Alert,
-  AlertDescription,
   Button,
   DialogHeader,
   DialogTitle,
   Field,
   FieldGroup,
+  FieldError,
   FieldLabel,
   Input,
   Spinner
 } from '@/shared/ui'
 
-import { useObjectEditor } from './useObjectEditor'
-
 interface ObjectEditorProps {
-  object?: ConstructionObject
+  editor: ReturnType<typeof useObjectEditor>
   busy: boolean
-  onSave: (input: ObjectInput) => Promise<void>
   onCancel: () => void
-  onChange: () => void
 }
-const ObjectEditor = ({ object, busy, onSave, onCancel, onChange }: ObjectEditorProps) => {
-  const { states, functions } = useObjectEditor(object, onSave)
+const ObjectEditor = ({ editor, busy, onCancel }: ObjectEditorProps) => {
+  const { states, forms } = editor
   return (
     <>
       <DialogHeader>
         <DialogTitle>{states.title}</DialogTitle>
       </DialogHeader>
-      <form
-        method="post"
-        className="max-w-2xl"
-        aria-busy={busy}
-        onChange={onChange}
-        onSubmit={event => {
-          event.preventDefault()
-          functions.onSubmit(event.currentTarget)
-        }}
-      >
+      <form method="post" className="max-w-2xl" aria-busy={busy} onSubmit={forms.onSubmit}>
         <FieldGroup>
-          {!!states.error && (
-            <Alert variant="destructive">
-              <AlertDescription>{states.error}</AlertDescription>
-            </Alert>
-          )}
-          <Field data-disabled={busy}>
+          <Field data-disabled={busy} data-invalid={!!forms.errors.name}>
             <FieldLabel htmlFor="object-name">Название объекта</FieldLabel>
             <Input
               id="object-name"
-              name="name"
-              defaultValue={object?.name}
+              {...forms.register('name')}
+              aria-invalid={!!forms.errors.name}
+              aria-describedby={forms.errors.name ? 'object-name-error' : undefined}
               required
               maxLength={160}
               disabled={busy}
             />
+            {forms.errors.name && (
+              <FieldError id="object-name-error">Название объекта обязательно.</FieldError>
+            )}
           </Field>
-          <Field data-disabled={busy}>
+          <Field data-disabled={busy} data-invalid={!!forms.errors.address}>
             <FieldLabel htmlFor="object-address">Адрес</FieldLabel>
             <Input
               id="object-address"
-              name="address"
+              {...forms.register('address')}
+              aria-invalid={!!forms.errors.address}
+              aria-describedby={forms.errors.address ? 'object-address-error' : undefined}
               autoComplete="street-address"
-              defaultValue={object?.address}
               required
               maxLength={300}
               disabled={busy}
             />
+            {forms.errors.address && (
+              <FieldError id="object-address-error">Адрес обязателен.</FieldError>
+            )}
           </Field>
           <Field orientation="horizontal">
             <Button type="submit" disabled={busy}>

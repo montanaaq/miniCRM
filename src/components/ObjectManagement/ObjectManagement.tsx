@@ -8,7 +8,7 @@ import { Alert, AlertDescription, Button, Dialog, DialogContent, DialogTrigger }
 import { useObjectManagement } from './useObjectManagement'
 
 const ObjectManagement = ({ object }: { object?: ConstructionObject }) => {
-  const { states, functions } = useObjectManagement(object)
+  const { states, functions, forms } = useObjectManagement(object)
   return (
     <Dialog
       open={states.editing}
@@ -65,11 +65,9 @@ const ObjectManagement = ({ object }: { object?: ConstructionObject }) => {
             />
           )}
           <ObjectEditor
-            object={states.original}
+            editor={forms.editor}
             busy={states.busy}
-            onSave={functions.onSave}
             onCancel={functions.onRequestClose}
-            onChange={functions.onChange}
           />
         </DialogContent>
       </div>

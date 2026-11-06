@@ -1,6 +1,7 @@
 import type { ConstructionObject, ObjectInput } from '@/shared/types/crm.schema'
 
 import { useEditDialog } from '@/components/DiscardConfirmation/useEditDialog'
+import { useObjectEditor } from '@/components/ObjectEditor/useObjectEditor'
 import { deleteObject, saveObject } from '@/lib/api'
 import { ROUTES } from '@/shared/constants/routes.const'
 import { useCrmMutation } from '@/shared/queries/useCrmMutation'
@@ -8,15 +9,16 @@ import { useBoolean } from '@siberiacancode/reactuse'
 import { useNavigate } from '@tanstack/react-router'
 
 export const useObjectManagement = (object?: ConstructionObject) => {
-  const editor = useEditDialog(object)
+  const dialog = useEditDialog(object)
   const [deleting, setDeleting] = useBoolean(false)
   const { states: crmMutation, functions: crmMutationFunctions } = useCrmMutation()
   const navigate = useNavigate()
   const onSave = (input: ObjectInput) =>
     crmMutationFunctions.onRun(
-      () => saveObject(input, editor.states.original),
-      editor.functions.onClose
+      () => saveObject(input, dialog.states.original),
+      dialog.functions.onClose
     )
+  const editor = useObjectEditor(dialog.states.original, onSave)
   const onDelete = () => {
     if (!object) return
     return crmMutationFunctions.onRun(
@@ -27,14 +29,16 @@ export const useObjectManagement = (object?: ConstructionObject) => {
     )
   }
   return {
-    states: { ...crmMutation, ...editor.states, deleting },
+    forms: { editor },
+    states: { ...crmMutation, ...dialog.states, deleting },
     functions: {
-      ...editor.functions,
-      onSave,
+      ...dialog.functions,
+      onRequestClose: () => dialog.functions.onRequestClose(editor.forms.isDirty),
       onDelete,
       onEdit: () => {
         crmMutationFunctions.onReset()
-        editor.functions.onOpen()
+        editor.forms.onReset(object)
+        dialog.functions.onOpen()
       },
       onRequestDelete: () => setDeleting(true),
       onCancelDelete: () => setDeleting(false)
