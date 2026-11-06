@@ -1,0 +1,69 @@
+.layout {
+  min-height: 100svh;
+  display: grid;
+}
+.intro {
+  background: var(--muted);
+  padding: var(--space-8) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+.logo {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: var(--tracking-logo);
+  text-decoration: none;
+}
+.intro h1 {
+  font-size: var(--hero-size);
+  letter-spacing: var(--tracking-hero);
+  line-height: var(--line-height-hero);
+}
+.intro p {
+  max-width: var(--text-width);
+  color: var(--muted-foreground);
+}
+.login {
+  padding: var(--space-11) var(--space-6);
+  align-self: center;
+  width: 100%;
+  max-width: var(--form-width);
+  margin: 0 auto;
+}
+.loginHeading h2 {
+  font-size: var(--font-size-title);
+  letter-spacing: var(--tracking-tight);
+  margin: var(--space-4) 0 var(--space-3);
+}
+.login > p {
+  color: var(--muted-foreground);
+  font-size: var(--font-size-sm);
+}
+.login form {
+  margin-top: var(--space-7-5);
+}
+.login .note {
+  font-size: var(--font-size-xs);
+  margin: var(--space-7) 0 0;
+}
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr 1fr;
+  }
+  .intro {
+    padding: var(--space-12-5);
+  }
+  .login {
+    padding: var(--space-12-5);
+    max-width: var(--form-width-desktop);
+  }
+}
+
+.loginHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
