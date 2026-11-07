@@ -24,7 +24,7 @@ export const useTaskBoard = (rows: TaskListRow[]) => {
   const queryClient = useQueryClient()
   const revisionRefreshMutation = useMutation({
     mutationFn: async (taskId: string) => {
-      const workspace = await queryClient.fetchQuery({ ...workspaceOptions(user), staleTime: 0 })
+      const workspace = await queryClient.query({ ...workspaceOptions(user), staleTime: 0 })
       return workspace.tasks.find(task => task.id === taskId)
     },
     onSuccess: task => {

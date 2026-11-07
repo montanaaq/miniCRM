@@ -22,7 +22,7 @@ export const useObjectManagement = (object?: ConstructionObject) => {
   const onDelete = () => {
     if (!object) return
     return crmMutationFunctions.onRun(
-      () => deleteObject(object.id),
+      () => deleteObject(object),
       () => {
         void navigate({ to: ROUTES.ADMIN })
       }

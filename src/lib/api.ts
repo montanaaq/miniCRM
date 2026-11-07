@@ -20,31 +20,14 @@ import { z } from 'zod'
 export const getErrorMessage = (error: unknown) => {
   if (error instanceof z.ZodError)
     return 'Получены некорректные данные. Обновите страницу; если ошибка повторится, обратитесь к администратору.'
-  if (typeof error === 'object' && error !== null && 'code' in error) {
-    const code = error.code
-    if (code === 'PROFILE_MISSING')
-      return 'Профиль не настроен. Попросите администратора назначить роль.'
-    if (code === 'INPUT_INVALID')
-      return 'Проверьте обязательные поля: название и адрес не могут состоять из пробелов.'
-    if (code === 'PGRST116' || code === 'NOT_FOUND')
-      return 'Запись уже изменилась или недоступна. Обновите данные.'
-    if (code === 'EDIT_CONFLICT')
-      return 'Запись уже изменилась или недоступна. Скопируйте свои правки, откройте актуальную запись и повторите редактирование.'
-    if (code === '40001') return 'Задача уже изменилась. Обновите данные и повторите действие.'
-    if (code === '42501') return 'Недостаточно прав. Проверьте назначение роли и доступ к данным.'
-    if (code === '23503') return 'Сначала удалите задачи объекта.'
-    if (code === '23514')
-      return 'Действие недоступно. Проверьте статус, исполнителя и обязательные поля.'
-    if (
-      code === '42703' &&
-      'message' in error &&
-      typeof error.message === 'string' &&
-      /\bversion\b/.test(error.message)
-    )
-      return 'База ещё не обновлена. Примените миграцию 202611060001_record_versions.sql в Supabase.'
-    if (code === 'PGRST205' || code === '42P01')
-      return 'База ещё не подготовлена. Примените миграцию из папки supabase/migrations.'
-  }
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string' &&
+    error.message.trim()
+  )
+    return error.message
   return 'Не удалось выполнить запрос. Проверьте подключение и повторите попытку.'
 }
 
@@ -60,7 +43,6 @@ export const loadProfile = async (userId: string) => {
 
 export const loadWorkspace = async () => {
   const client = getClient()
-  // shortcut: Workspace loads up to the Supabase row limit; add pagination before larger datasets.
   const [profiles, objects, tasks] = await Promise.all([
     client.from('profiles').select('*'),
     client
@@ -98,7 +80,8 @@ export const loadHistory = async (taskId: string) => {
 
 export const saveObject = async (input: ObjectInput, original?: ConstructionObject) => {
   const parsed = OBJECT_INPUT_SCHEMA.safeParse(input)
-  if (!parsed.success) throw { code: 'INPUT_INVALID' }
+  if (!parsed.success)
+    throw new Error('Проверьте обязательные поля: название и адрес не могут состоять из пробелов.')
   const values = parsed.data
   const query = getClient().from('objects')
   const { data, error } = await (
@@ -112,12 +95,17 @@ export const saveObject = async (input: ObjectInput, original?: ConstructionObje
   )
     .select('id')
     .maybeSingle()
-  if (!error && !data) throw { code: original ? 'EDIT_CONFLICT' : 'NOT_FOUND' }
   if (error) throw error
+  if (!data)
+    throw new Error(
+      original
+        ? 'Запись уже изменилась или недоступна. Скопируйте свои правки, откройте актуальную запись и повторите редактирование.'
+        : 'Запись уже изменилась или недоступна. Обновите данные.'
+    )
 }
 export const saveTask = async (input: TaskInput, original?: Task) => {
   const parsed = TASK_INPUT_SCHEMA.safeParse(input)
-  if (!parsed.success) throw { code: 'INPUT_INVALID' }
+  if (!parsed.success) throw new Error('Проверьте название, объект и исполнителя задачи.')
   const values = parsed.data
   const query = getClient().from('tasks')
   const { data, error } = await (
@@ -131,30 +119,37 @@ export const saveTask = async (input: TaskInput, original?: Task) => {
   )
     .select('id')
     .maybeSingle()
-  if (!error && !data) throw { code: original ? 'EDIT_CONFLICT' : 'NOT_FOUND' }
   if (error) throw error
+  if (!data)
+    throw new Error(
+      original
+        ? 'Запись уже изменилась или недоступна. Скопируйте свои правки, откройте актуальную запись и повторите редактирование.'
+        : 'Запись уже изменилась или недоступна. Обновите данные.'
+    )
 }
-export const deleteObject = async (id: string) => {
+export const deleteObject = async (original: ConstructionObject) => {
   const { data, error } = await getClient()
     .from('objects')
     .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id)
+    .eq('id', original.id)
+    .eq('version', original.version)
     .is('deleted_at', null)
     .select('id')
-    .single()
+    .maybeSingle()
   if (error) throw error
-  if (!data) throw { code: 'NOT_FOUND' }
+  if (!data) throw new Error('Запись уже изменилась или недоступна. Обновите данные.')
 }
-export const deleteTask = async (id: string) => {
+export const deleteTask = async (original: Task) => {
   const { data, error } = await getClient()
     .from('tasks')
     .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id)
+    .eq('id', original.id)
+    .eq('version', original.version)
     .is('deleted_at', null)
     .select('id')
-    .single()
+    .maybeSingle()
   if (error) throw error
-  if (!data) throw { code: 'NOT_FOUND' }
+  if (!data) throw new Error('Запись уже изменилась или недоступна. Обновите данные.')
 }
 export const changeStatus = async (task: Task, status: Status, comment: string) => {
   const { error } = await getClient().rpc('change_task_status', {

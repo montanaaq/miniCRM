@@ -19,14 +19,18 @@ import { useMatchRoute } from '@tanstack/react-router'
 const WorkspacePending = () => {
   const userQuery = useQuery({ ...userOptions, enabled: false })
   const matchRoute = useMatchRoute()
+
   const user = userQuery.data
   if (!user) return <SessionSkeleton />
+
   const home = getHomePath(user)
   if (home === ROUTES.SIGN_IN) return <SessionSkeleton />
+
   const isTask = !!matchRoute({ to: WORKSPACE_ROUTES[home].task, pending: true })
   const isObject = !!matchRoute({ to: WORKSPACE_ROUTES[home].object, pending: true })
   const isAllTasks = !!matchRoute({ to: ROUTES.ALL_TASKS, pending: true })
   const isMyTasks = !!matchRoute({ to: ROUTES.MY_TASKS, pending: true })
+
   return (
     <UserProvider user={user}>
       <WorkspaceLayout home={home} fullWidth={isObject || isMyTasks || isAllTasks}>

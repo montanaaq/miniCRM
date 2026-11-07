@@ -122,12 +122,15 @@ describe('Перенос задач между статусами', () => {
     expect(current().states.revisionTask).toBeNull()
   })
   it('сохраняет комментарий после ошибки и закрывает окно только после успешного повтора', async () => {
-    vi.mocked(api.changeStatus).mockRejectedValueOnce({ code: '40001' })
+    vi.mocked(api.changeStatus).mockRejectedValueOnce({
+      code: '40001',
+      message: 'Task changed; reload'
+    })
     mount()
     await act(async () => current().functions.onMove(task, 'revision'))
     act(() => changeComment('Исправить крепления'))
     await act(async () => current().forms.onConfirmRevision())
-    expect(current().states.error).toContain('уже изменилась')
+    expect(current().states.error).toBe('Task changed; reload')
     expect(current().states.revisionTask).toEqual(task)
     expect(commentInput().value).toBe('Исправить крепления')
     expect(current().states.announcement).toBe('')
@@ -147,7 +150,10 @@ describe('Перенос задач между статусами', () => {
     expect(current().states.announcement).toContain('на доработку')
   })
   it('после обновления запрещает возврат принятой задачи и сохраняет комментарий', async () => {
-    vi.mocked(api.changeStatus).mockRejectedValueOnce({ code: '40001' })
+    vi.mocked(api.changeStatus).mockRejectedValueOnce({
+      code: '40001',
+      message: 'Task changed; reload'
+    })
     vi.spyOn(api, 'loadWorkspace').mockResolvedValue({
       tasks: [{ ...task, status: 'accepted', version: 2 }],
       objects: [],

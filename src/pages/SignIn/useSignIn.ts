@@ -29,9 +29,7 @@ export const useSignIn = () => {
   const signIn = useLockCallback(async (input: { email: string; password: string }) => {
     try {
       await signInMutation.mutateAsync(input)
-    } catch {
-      // The form renders the mutation error.
-    }
+    } catch {}
   })
   return {
     states: {

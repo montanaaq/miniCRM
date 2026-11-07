@@ -231,10 +231,14 @@ begin
   update public.objects set address='Старый адрес' where id=v_object and version=1;
   perform pg_temp.assert_true(not found, 'Stale object edit affects zero rows');
   perform pg_temp.assert_true(exists(select 1 from public.objects where id=v_object and version=2 and address='Новый адрес'), 'Object keeps latest edit');
+  update public.objects set deleted_at=now() where id=v_object and version=1 and deleted_at is null;
+  perform pg_temp.assert_true(not found, 'Stale object deletion affects zero rows');
   update public.tasks set title='Изменено' where id=v_task and version=1;
   update public.tasks set title='Старое название' where id=v_task and version=1;
   perform pg_temp.assert_true(not found, 'Stale task edit affects zero rows');
   perform pg_temp.assert_true(exists(select 1 from public.tasks where id=v_task and version=2 and title='Изменено'), 'Task keeps latest edit');
+  update public.tasks set deleted_at=now() where id=v_task and version=1 and deleted_at is null;
+  perform pg_temp.assert_true(not found, 'Stale task deletion affects zero rows');
   update public.tasks set assignee_id='10000000-0000-0000-0000-000000000003' where id=v_task;
   perform pg_temp.assert_true(exists(select 1 from public.tasks where id=v_task and status='new' and author_id=auth.uid()), 'Reassignment preserves status and author');
   perform set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000002',true);
@@ -243,9 +247,9 @@ begin
   perform set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000003',true);
   perform pg_temp.assert_true(exists(select 1 from public.tasks where id=v_task), 'New executor gains access');
   perform set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',true);
-  update public.tasks set deleted_at=now() where id=v_task and deleted_at is null returning id into v_deleted;
+  update public.tasks set deleted_at=now() where id=v_task and version=3 and deleted_at is null returning id into v_deleted;
   perform pg_temp.assert_true(v_deleted=v_task, 'API deletion can return task ID');
-  update public.objects set deleted_at=now() where id=v_object and deleted_at is null returning id into v_deleted;
+  update public.objects set deleted_at=now() where id=v_object and version=2 and deleted_at is null returning id into v_deleted;
   perform pg_temp.assert_true(v_deleted=v_object, 'Empty object can be deleted');
   perform set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000003',true);
   perform pg_temp.assert_true(not exists(select 1 from public.tasks where id=v_task), 'Deleted task is hidden from executor');

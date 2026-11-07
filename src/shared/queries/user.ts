@@ -6,10 +6,13 @@ export const userOptions = queryOptions({
   queryKey: ['user'],
   queryFn: async () => {
     const { data, error } = await getClient().auth.getSession()
+
     if (error) throw error
     if (!data.session) return null
+
     const profile = await loadProfile(data.session.user.id)
-    if (!profile) throw { code: 'PROFILE_MISSING' }
+    if (!profile) throw new Error('Профиль не настроен. Попросите администратора назначить роль.')
+
     return profile
   }
 })

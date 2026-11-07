@@ -16,7 +16,7 @@ const Root = () => {
   )
 }
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  beforeLoad: async ({ context }) => ({ user: await context.queryClient.fetchQuery(userOptions) }),
+  beforeLoad: async ({ context }) => ({ user: await context.queryClient.query(userOptions) }),
   component: Root,
   notFoundComponent: () => (
     <main className="setup">

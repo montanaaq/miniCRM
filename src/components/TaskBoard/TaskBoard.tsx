@@ -25,7 +25,7 @@ import {
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { createPortal } from 'react-dom'
 
-import TaskBoardColumn from './TaskBoardColumn'
+import TaskBoardColumn from './TaskBoardColumn/TaskBoardColumn'
 import { useTaskBoard } from './useTaskBoard'
 
 const TaskBoard = ({ rows, home }: { rows: TaskListRow[]; home: WorkspaceHome }) => {

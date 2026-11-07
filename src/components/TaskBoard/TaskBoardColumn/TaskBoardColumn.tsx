@@ -5,7 +5,7 @@ import type { WorkspaceHome } from '@/shared/types/routes.types'
 import styles from '@/shared/styles/task-board.module.css'
 import { TaskStatus } from '@/shared/ui'
 
-import TaskBoardCard from './TaskBoardCard'
+import TaskBoardCard from '../TaskBoardCard/TaskBoardCard'
 import { useTaskBoardColumn } from './useTaskBoardColumn'
 
 interface TaskBoardColumnProps {

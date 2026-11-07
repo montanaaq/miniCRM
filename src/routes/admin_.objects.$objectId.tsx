@@ -9,6 +9,7 @@ export const Route = createFileRoute('/admin_/objects/$objectId')({
   beforeLoad: ({ context, location }) => ({
     user: requireRole(context.user, 'manager', location.href)
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(workspaceOptions(context.user)),
+  loader: ({ context }) =>
+    context.queryClient.query({ ...workspaceOptions(context.user), staleTime: 'static' }),
   component: Admin
 })

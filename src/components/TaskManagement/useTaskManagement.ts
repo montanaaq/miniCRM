@@ -26,7 +26,7 @@ export const useTaskManagement = (
   const onDelete = () => {
     if (!task) return
     return crmMutationFunctions.onRun(
-      () => deleteTask(task.id),
+      () => deleteTask(task),
       () => {
         void navigate({ to: ROUTES.ADMIN_OBJECT, params: { objectId: task.object_id } })
       }
