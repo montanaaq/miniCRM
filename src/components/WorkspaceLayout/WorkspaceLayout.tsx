@@ -5,7 +5,12 @@ import ThemeToggle from '@/components/ThemeToggle/ThemeToggle'
 import { ROLE_LABELS } from '@/shared/constants/task.const'
 import styles from '@/shared/styles/workspace.module.css'
 import { Alert, AlertDescription, Button } from '@/shared/ui'
-import { Building03Icon, Task01Icon } from '@hugeicons/core-free-icons'
+import {
+  Building03Icon,
+  Logout01Icon,
+  SidebarLeft01Icon,
+  Task01Icon
+} from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from '@tanstack/react-router'
 
@@ -24,17 +29,25 @@ const WorkspaceLayout = ({ home, children, fullWidth }: WorkspaceLayoutProps) =>
         to={home}
         activeOptions={{ exact: true }}
         aria-current={!states.isTasks ? 'page' : undefined}
+        aria-label="Объекты"
       >
         <HugeiconsIcon icon={Building03Icon} size={18} aria-hidden="true" />
-        Объекты
+        <span className={styles.sidebarLabel}>
+          <span className={styles.navLabel}>Объекты</span>
+        </span>
       </Link>
       <Link
         to={states.tasksPath}
         search={states.tasksSearch}
         aria-current={states.isTasks ? 'page' : undefined}
+        aria-label={states.user?.role === 'manager' ? 'Все задачи' : 'Мои задачи'}
       >
         <HugeiconsIcon icon={Task01Icon} size={18} aria-hidden="true" />
-        {states.user?.role === 'manager' ? 'Все задачи' : 'Мои задачи'}
+        <span className={styles.sidebarLabel}>
+          <span className={styles.navLabel}>
+            {states.user?.role === 'manager' ? 'Все задачи' : 'Мои задачи'}
+          </span>
+        </span>
       </Link>
     </nav>
   )
@@ -48,21 +61,41 @@ const WorkspaceLayout = ({ home, children, fullWidth }: WorkspaceLayoutProps) =>
         Перейти к содержимому
       </a>
       <header className={styles.mobileHeader}>{navigation}</header>
-      <aside className={styles.sidebar}>
-        <Link className={styles.logo} to={home}>
-          ОБЪЕКТЫ<span>/ ЗАДАЧИ</span>
-        </Link>
-        {navigation}
-        <div className={styles.user}>
-          <div className={styles.userInfo}>
-            <strong>{states.user?.name}</strong>
-            <span>{states.user && ROLE_LABELS[states.user.role]}</span>
+      <div className={styles.sidebarRegion}>
+        <aside className={styles.sidebar}>
+          <Link className={styles.logo} to={home} aria-label="Объекты / Задачи — главная">
+            <HugeiconsIcon icon={SidebarLeft01Icon} size={22} aria-hidden="true" />
+            <span className={styles.sidebarLabel}>
+              <span className={styles.logoText}>
+                ОБЪЕКТЫ<span>/ ЗАДАЧИ</span>
+              </span>
+            </span>
+          </Link>
+          {navigation}
+          <div className={styles.user}>
+            <div className={styles.sidebarLabel}>
+              <div className={styles.userInfo}>
+                <strong>{states.user?.name}</strong>
+                <span>{states.user && ROLE_LABELS[states.user.role]}</span>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="lg"
+              className={styles.signOut}
+              aria-label="Выйти из аккаунта"
+              title="Выйти из аккаунта"
+              disabled={states.busy}
+              onClick={functions.onSignOut}
+            >
+              <HugeiconsIcon icon={Logout01Icon} aria-hidden="true" />
+              <span className={styles.sidebarLabel}>
+                <span className={styles.navLabel}>Выйти</span>
+              </span>
+            </Button>
           </div>
-          <Button variant="outline" size="sm" disabled={states.busy} onClick={functions.onSignOut}>
-            Выйти
-          </Button>
-        </div>
-      </aside>
+        </aside>
+      </div>
       <main className={styles.main} id="main-content" tabIndex={-1}>
         <header className={styles.topbar}>
           <div className={styles.workspaceName}>
